@@ -15,7 +15,17 @@ import (
 const HIBP_API = "https://haveibeenpwned.com/api/v3/breachedaccount/"
 
 func main() {
-	cache.InitLocalCache()
+	localCache, err := cache.NewLocalCache()
+	if err != nil {
+		log.Fatalf("Failed to initialize local cache: %v", err)
+	}
+
+	remoteCache, err := cache.NewRemoteCache()
+	if err != nil {
+		log.Fatalf("Failed to initialize remote cache: %v", err)
+	}
+
+	multilayerCache := cache.NewMultiLayerCache(localCache, remoteCache)
 
 	r := gin.Default()
 

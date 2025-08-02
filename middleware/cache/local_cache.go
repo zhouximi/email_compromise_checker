@@ -9,8 +9,6 @@ import (
 	"os"
 )
 
-var GlobalLocalCache *LocalCache
-
 type LocalCache struct {
 	localCache *ristretto.Cache
 }

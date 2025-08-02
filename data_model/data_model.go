@@ -31,6 +31,12 @@ type LocalCacheConfig struct {
 	BufferItems int64 `json:"BufferItems"`
 }
 
+type RedisConfig struct {
+	Addr     string `json:"addr"`
+	Password string `json:"password"`
+	DB       int    `json:"db"`
+}
+
 type MySQLConfig struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
