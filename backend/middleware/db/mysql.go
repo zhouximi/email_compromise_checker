@@ -9,8 +9,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var dbConfigPath = "./config/mysql_config.json"
-
 type MySQLQuerier struct {
 	db *sql.DB
 }

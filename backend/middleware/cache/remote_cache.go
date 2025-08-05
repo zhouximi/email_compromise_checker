@@ -20,7 +20,7 @@ func NewRemoteCache() (*RemoteCache, error) {
 
 	if _, err := rdb.Ping(context.Background()).Result(); err != nil {
 		log.Printf("[NewRemoteCache] Redis ping failed: %v, redis_config=%#v", err, redisConfig)
-		return nil, nil
+		return nil, err
 	}
 
 	log.Println("[NewRemoteCache] Redis client successfully initialized")
@@ -28,14 +28,14 @@ func NewRemoteCache() (*RemoteCache, error) {
 }
 
 func (c *RemoteCache) Get(cacheKey string) (interface{}, error) {
-	if c == nil || c.redisCache == nil {
+	if c.redisCache == nil {
 		return nil, errors.New("RemoteCache is not initialized")
 	}
 
 	data, err := c.redisCache.Get(context.Background(), cacheKey).Bytes()
 	if err == redis.Nil {
 		log.Printf("[RemoteCache.Get] Key %s not found", cacheKey)
-		return nil, errors.New("key not found in remote cache")
+		return nil, errors.New("[RemoteCache.Get] Key not found in remote cache")
 	} else if err != nil {
 		log.Printf("[RemoteCache.Get] Failed to get key %s: %v", cacheKey, err)
 		return nil, err
@@ -45,7 +45,7 @@ func (c *RemoteCache) Get(cacheKey string) (interface{}, error) {
 }
 
 func (c *RemoteCache) Set(cacheKey string, value interface{}) error {
-	if c == nil || c.redisCache == nil {
+	if c.redisCache == nil {
 		return errors.New("RemoteCache is not initialized")
 	}
 

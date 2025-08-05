@@ -9,7 +9,6 @@ import (
 	"github.com/zhouximi/email_compromise_checker/data_model"
 	"github.com/zhouximi/email_compromise_checker/middleware/cache"
 	"github.com/zhouximi/email_compromise_checker/middleware/db"
-	"github.com/zhouximi/email_compromise_checker/types"
 )
 
 var GlobalHandler IEmailCheckHandler
@@ -36,7 +35,7 @@ func (h *EmailCheckHandler) IsEmailCompromised(email string) (*data_model.EmailI
 	}
 
 	if !isValidEmail(email) {
-		return nil, types.ErrInvalidEmailFormat
+		return nil, errors.New("invalid_email_format")
 	}
 
 	if cachedEmailInfo := h.checkEmailInfoFromCache(email); cachedEmailInfo != nil {
@@ -66,6 +65,7 @@ func (h *EmailCheckHandler) checkEmailInfoFromCache(email string) *data_model.Em
 
 	emailInfo, ok := cachedValue.(*data_model.EmailInfo)
 	if !ok {
+		log.Println("[checkEmailInfoFromCache] Cached value type assertion failed")
 		return nil
 	}
 
@@ -103,7 +103,7 @@ func (h *EmailCheckHandler) checkEmailInfoFromDB(email string) (*data_model.Emai
 
 	emailInfo, ok := result.(*data_model.EmailInfo)
 	if !ok {
-		return nil, errors.New("invalid type assertion to *EmailInfo")
+		return nil, fmt.Errorf("[checkEmailInfoFromDB] Invalid type assertion for email %s", email)
 	}
 
 	return emailInfo, nil
@@ -112,7 +112,6 @@ func (h *EmailCheckHandler) checkEmailInfoFromDB(email string) (*data_model.Emai
 func (h *EmailCheckHandler) setEmailInfoToCache(emailInfo *data_model.EmailInfo) {
 	cacheKey := fmt.Sprintf("email:%s", emailInfo.Email)
 	if err := h.cache.Set(cacheKey, emailInfo); err != nil {
-		// Log the error but do not return it, as this is a non-critical operation
-		log.Println("[saveEmailInfoToCache]failed to save email info to cache:", err)
+		log.Printf("[setEmailInfoToCache] Failed to save email info for email %s to cache: %v", emailInfo.Email, err)
 	}
 }

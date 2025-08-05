@@ -19,12 +19,14 @@ type LocalCache struct {
 func NewLocalCache() (*LocalCache, error) {
 	localCacheConfig, err := os.ReadFile(localCacheConfigPath)
 	if err != nil {
-		log.Fatalf("[InitLocalCache]Failed to read config file: %v", err)
+		log.Printf("[InitLocalCache]Failed to read config file: %v", err)
+		return nil, err
 	}
 
 	var cfg data_model.LocalCacheConfig
 	if err := json.Unmarshal(localCacheConfig, &cfg); err != nil {
-		log.Fatalf("[InitLocalCache]Failed to parse config: %v", err)
+		log.Printf("[InitLocalCache]Failed to parse config: %v", err)
+		return nil, err
 	}
 
 	localCache, err := ristretto.NewCache(&ristretto.Config{
@@ -33,7 +35,7 @@ func NewLocalCache() (*LocalCache, error) {
 		BufferItems: cfg.BufferItems,
 	})
 	if err != nil {
-		log.Fatalf("[InitLocalCache]Failed to create cache: %v", err)
+		log.Printf("[InitLocalCache]Failed to create cache: %v", err)
 		return nil, err
 	}
 	return &LocalCache{
@@ -42,26 +44,16 @@ func NewLocalCache() (*LocalCache, error) {
 }
 
 func (c *LocalCache) Get(cacheKey string) (interface{}, error) {
-	if c == nil {
-		log.Println("[LocalCache.Get]Cache is not initialized")
-		return nil, errors.New("[LocalCache.Get]Cache is not initialized")
-	}
-
 	value, found := c.localCache.Get(cacheKey)
 	if !found {
 		log.Printf("[LocalCache.Get]Key %s not found in cache", cacheKey)
-		return nil, errors.New("key not found in cache")
+		return nil, errors.New("[LocalCache.Get]Key not found in cache")
 	}
 
 	return value, nil
 }
 
 func (c *LocalCache) Set(cacheKey string, value interface{}) error {
-	if c == nil {
-		log.Println("[SetToCache]Cache is not initialized")
-		return errors.New("LocalCache is not initialized")
-	}
-
 	success := c.localCache.Set(cacheKey, value, 1)
 	if !success {
 		log.Printf("[SetToCache]Failed to set key %s in cache", cacheKey)

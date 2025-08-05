@@ -2,6 +2,7 @@ package cache
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 
 	"github.com/redis/go-redis/v9"
@@ -52,16 +53,18 @@ func (c *MultiLayerCache) Get(cacheKey string) (interface{}, error) {
 
 	// Fallback to remote cache
 	data, err := c.remoteCache.Get(cacheKey)
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		log.Printf("[MultiLayerCache.Get] Key %s not found in remote cache", cacheKey)
-		return nil, err
+		return nil, nil
 	} else if err != nil {
 		log.Printf("[MultiLayerCache.Get] Remote cache get failed: %v", err)
 		return nil, err
 	}
 
-	// Store back into local cache,
-	c.localCache.Set(cacheKey, data)
+	// Store back into local cache
+	if err := c.localCache.Set(cacheKey, data); err != nil {
+		log.Printf("[MultiLayerCache.Get] Failed to set key %s in local cache: %v", cacheKey, err)
+	}
 
 	return data, nil
 }
