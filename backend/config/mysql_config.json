@@ -1,7 +1,0 @@
-{
-  "username": "root",
-  "password": "pwd.mysql",
-  "host": "localhost",
-  "port": "3307",
-  "database": "mydb"
-}

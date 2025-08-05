@@ -14,11 +14,42 @@ import (
 
 func main() {
 	initService()
+	startServer()
+}
 
+func initService() {
+	localCache, err := cache.NewLocalCache()
+	if err != nil {
+		log.Fatalf("Failed to initialize local cache: %v", err)
+	}
+
+	remoteCache, err := cache.NewRemoteCache()
+	if err != nil {
+		log.Fatalf("Failed to initialize remote cache: %v", err)
+	}
+
+	multilayerCache := cache.NewMultiLayerCache(localCache, remoteCache)
+
+	mysqlDB, err := db.NewMySQLQuerier()
+	if err != nil {
+		log.Fatalf("Failed to initialize db: %v", err)
+	}
+
+	handler.GlobalHandler = handler.NewEmailCheckHandler(multilayerCache, mysqlDB)
+}
+
+func startServer() {
 	r := gin.Default()
 
-	// POST /check
-	r.POST("/check", func(c *gin.Context) {
+	registerRoutes(r)
+
+	if err := r.Run(":8080"); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
+}
+
+func registerRoutes(r *gin.Engine) {
+	r.POST("/check_email", func(c *gin.Context) {
 		var req data_model.EmailCheckAPIRequest
 		if err := c.ShouldBindJSON(&req); err != nil || req.Email == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email"})
@@ -33,39 +64,14 @@ func main() {
 		}
 
 		if emailInfo == nil {
-			c.JSON(http.StatusOK, gin.H{
-				"compromised": false,
-			})
+			c.JSON(http.StatusOK, gin.H{"compromised": false})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"compromised": emailInfo.Compromised,
-		})
+		c.JSON(http.StatusOK, gin.H{"compromised": emailInfo.Compromised})
 	})
 
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
-
-	r.Run(":8080")
-}
-
-func initService() {
-	localCache, err := cache.NewLocalCache()
-	if err != nil {
-		log.Fatalf("Failed to initialize local cache: %v", err)
-	}
-	remoteCache, err := cache.NewRemoteCache()
-	if err != nil {
-		log.Fatalf("Failed to initialize remote cache: %v", err)
-	}
-	multilayerCache := cache.NewMultiLayerCache(localCache, remoteCache)
-
-	mysqlDB, err := db.NewMySQLQuerier()
-	if err != nil {
-		log.Fatalf("Failed to initialize db: %v", err)
-	}
-
-	handler.GlobalHandler = handler.NewEmailCheckHandler(multilayerCache, mysqlDB)
 }
